@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+
+.cursor
+agent-transcripts
+
+**/.DS_Store
+
