@@ -111,6 +111,7 @@ async function getAllWinnerEmployeeIds() {
 }
 
 // --- Static sites ---
+app.use("/logo", express.static(path.join(__dirname, "public", "logo")));
 app.use("/employee", express.static(path.join(__dirname, "public", "employee")));
 app.use("/admin", express.static(path.join(__dirname, "public", "admin")));
 app.get("/", (req, res) => res.redirect("/employee/login.html"));
@@ -303,10 +304,9 @@ app.post("/api/admin/matches/:matchId/draw", requireAdmin, async (req, res) => {
     employeeId: w.employeeId,
     ticketCount: String(w.ticketCount),
     pickedAt,
-    capacityTickets: String(capacityTickets),
   }));
 
-  await rewriteCsv(winnersPath, ["matchId", "employeeId", "ticketCount", "pickedAt", "capacityTickets"], rows);
+  await rewriteCsv(winnersPath, ["matchId", "employeeId", "ticketCount", "pickedAt"], rows);
 
   res.json({ ok: true, match: m, capacityTickets, winners, remainingTickets: remaining });
 });

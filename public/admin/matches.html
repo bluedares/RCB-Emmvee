@@ -5,9 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Matches | Admin</title>
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 20px;
+      }
+      .logo-container img {
+        height: 60px;
+        width: auto;
+        object-fit: contain;
+        transition: opacity 0.3s ease;
+      }
+      .logo-container img.loading {
+        opacity: 0.3;
+      }
+      .logo-container img.loaded {
+        opacity: 1;
+      }
+      .logo-container img.error {
+        display: none;
+      }
+      @media (max-width: 600px) {
+        .logo-container {
+          gap: 16px;
+        }
+        .logo-container img {
+          height: 50px;
+        }
+      }
+      
+      .status-yes {
+        color: var(--ok);
+        font-weight: 700;
+      }
+      .status-no {
+        color: var(--muted);
+      }
+    </style>
   </head>
   <body>
     <div class="container">
+      <div class="logo-container">
+        <img 
+          id="emmveeLogo" 
+          src="/logo/Emmvee-group-logo.jpg" 
+          alt="Emmvee Logo" 
+          class="loading"
+        />
+        <img 
+          id="rcbLogo" 
+          src="/logo/rcb_logo.jpg" 
+          alt="RCB Logo" 
+          class="loading"
+        />
+      </div>
+      
       <div class="brand">
         <h1>Admin — Matches</h1>
         <div class="pill">Pick winners match-wise</div>
@@ -39,6 +94,23 @@
     </div>
 
     <script>
+      // Handle logo loading
+      const emmveeLogo = document.getElementById("emmveeLogo");
+      const rcbLogo = document.getElementById("rcbLogo");
+      
+      [emmveeLogo, rcbLogo].forEach(logo => {
+        if (logo) {
+          logo.addEventListener("load", () => {
+            logo.classList.remove("loading");
+            logo.classList.add("loaded");
+          });
+          logo.addEventListener("error", () => {
+            logo.classList.remove("loading");
+            logo.classList.add("error");
+          });
+        }
+      });
+
       const rowsEl = document.getElementById("rows");
       const msg = document.getElementById("msg");
       const logoutBtn = document.getElementById("logoutBtn");
@@ -59,6 +131,8 @@
         rowsEl.innerHTML = "";
         for (const m of data.matches || []) {
           const tr = document.createElement("tr");
+          const statusClass = m.winnersGenerated ? "status-yes" : "status-no";
+          const statusText = m.winnersGenerated ? "Yes" : "No";
           tr.innerHTML = `
             <td>
               <div style="font-weight:800">${m.title}</div>
@@ -66,7 +140,7 @@
             </td>
             <td>${m.interestedCount}</td>
             <td>${m.eligibleCount}</td>
-            <td>${m.winnersGenerated ? "Yes" : "No"}</td>
+            <td><span class="${statusClass}">${statusText}</span></td>
             <td><a class="link" href="/admin/match.html?matchId=${encodeURIComponent(m.matchId)}">Open</a></td>
           `;
           rowsEl.appendChild(tr);

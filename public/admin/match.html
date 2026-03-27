@@ -5,9 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Match | Admin</title>
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 20px;
+      }
+      .logo-container img {
+        height: 60px;
+        width: auto;
+        object-fit: contain;
+        transition: opacity 0.3s ease;
+      }
+      .logo-container img.loading {
+        opacity: 0.3;
+      }
+      .logo-container img.loaded {
+        opacity: 1;
+      }
+      .logo-container img.error {
+        display: none;
+      }
+      @media (max-width: 600px) {
+        .logo-container {
+          gap: 16px;
+        }
+        .logo-container img {
+          height: 50px;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="container">
+      <div class="logo-container">
+        <img 
+          id="emmveeLogo" 
+          src="/logo/Emmvee-group-logo.jpg" 
+          alt="Emmvee Logo" 
+          class="loading"
+        />
+        <img 
+          id="rcbLogo" 
+          src="/logo/rcb_logo.jpg" 
+          alt="RCB Logo" 
+          class="loading"
+        />
+      </div>
+      
       <div class="brand">
         <h1 id="title">Match</h1>
         <div class="pill" id="pill">Loading…</div>
@@ -19,7 +66,25 @@
           <button class="btn secondary" id="logoutBtn">Logout</button>
         </div>
 
-        <div class="row two">
+        <div id="winnersSection" style="display:none;">
+          <div style="font-weight: 800; font-size: 15px;">Winners (Already Generated)</div>
+          <div class="hint" id="winnersHint">Loading…</div>
+          <table class="table" style="margin-top: 10px;">
+            <thead>
+              <tr>
+                <th>Employee ID</th>
+                <th>Tickets</th>
+              </tr>
+            </thead>
+            <tbody id="winnersRows"></tbody>
+          </table>
+          <div style="height: 14px;"></div>
+          <div>
+            <a class="link" id="downloadLink" href="#">Download winners (CSV for Excel)</a>
+          </div>
+        </div>
+
+        <div class="row two" id="drawContainer">
           <div>
             <div style="font-weight: 800; font-size: 15px;">Eligible employees</div>
             <div class="hint" id="eligibleHint">Loading…</div>
@@ -46,23 +111,39 @@
 
             <button class="btn" id="randomBtn">Random</button>
             <div id="msg"></div>
-
-            <div style="height: 14px;"></div>
-            <div>
-              <a class="link" id="downloadLink" href="#" style="display:none;">Download winners (CSV for Excel)</a>
-            </div>
           </div>
         </div>
       </div>
     </div>
 
     <script>
+      // Handle logo loading
+      const emmveeLogo = document.getElementById("emmveeLogo");
+      const rcbLogo = document.getElementById("rcbLogo");
+      
+      [emmveeLogo, rcbLogo].forEach(logo => {
+        if (logo) {
+          logo.addEventListener("load", () => {
+            logo.classList.remove("loading");
+            logo.classList.add("loaded");
+          });
+          logo.addEventListener("error", () => {
+            logo.classList.remove("loading");
+            logo.classList.add("error");
+          });
+        }
+      });
+
       const params = new URLSearchParams(window.location.search);
       const matchId = params.get("matchId");
       const titleEl = document.getElementById("title");
       const pillEl = document.getElementById("pill");
-      const eligibleRowsEl = document.getElementById("eligibleRows");
       const eligibleHintEl = document.getElementById("eligibleHint");
+      const eligibleRowsEl = document.getElementById("eligibleRows");
+      const winnersSection = document.getElementById("winnersSection");
+      const drawContainer = document.getElementById("drawContainer");
+      const winnersHintEl = document.getElementById("winnersHint");
+      const winnersRowsEl = document.getElementById("winnersRows");
       const capacityEl = document.getElementById("capacity");
       const randomBtn = document.getElementById("randomBtn");
       const msg = document.getElementById("msg");
@@ -95,8 +176,43 @@
           tr.innerHTML = `<td>${e.employeeId}</td><td>${e.ticketCount}</td>`;
           eligibleRowsEl.appendChild(tr);
         }
-
-        downloadLink.style.display = "inline-block";
+        
+        // Check if winners already exist
+        await loadWinners();
+      }
+      
+      async function loadWinners() {
+        const res = await fetch(`/api/admin/matches/${encodeURIComponent(matchId)}/winners`);
+        if (res.status === 404) {
+          // No winners yet, show draw container
+          winnersSection.style.display = "none";
+          drawContainer.style.display = "grid";
+          return;
+        }
+        if (res.status === 401) {
+          window.location.href = "/admin/login.html";
+          return;
+        }
+        const data = await res.json();
+        if (!res.ok) {
+          winnersSection.style.display = "none";
+          drawContainer.style.display = "grid";
+          return;
+        }
+        
+        // Winners exist, show them and hide draw container
+        winnersSection.style.display = "block";
+        drawContainer.style.display = "none";
+        
+        winnersRowsEl.innerHTML = "";
+        const winners = data.winners || [];
+        winnersHintEl.textContent = `${winners.length} winner(s) selected`;
+        for (const w of winners) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${w.employeeId}</td><td>${w.ticketCount}</td>`;
+          winnersRowsEl.appendChild(tr);
+        }
+        
         downloadLink.href = `/api/admin/matches/${encodeURIComponent(matchId)}/winners/download`;
       }
 

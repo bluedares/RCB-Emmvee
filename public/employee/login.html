@@ -3,13 +3,61 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Employee Login | IPL Tickets</title>
+    <title>Grab your RCB Tickets - Emmvee</title>
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 24px;
+        padding: 20px 0;
+      }
+      .logo-container img {
+        height: 80px;
+        width: auto;
+        object-fit: contain;
+        transition: opacity 0.3s ease;
+      }
+      .logo-container img.loading {
+        opacity: 0.3;
+      }
+      .logo-container img.loaded {
+        opacity: 1;
+      }
+      .logo-container img.error {
+        display: none;
+      }
+      @media (max-width: 600px) {
+        .logo-container {
+          gap: 16px;
+        }
+        .logo-container img {
+          height: 60px;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="container">
+      <div class="logo-container">
+        <img 
+          id="emmveeLogo" 
+          src="/logo/Emmvee-group-logo.jpg" 
+          alt="Emmvee Logo" 
+          class="loading"
+        />
+        <img 
+          id="rcbLogo" 
+          src="/logo/rcb_logo.jpg" 
+          alt="RCB Logo" 
+          class="loading"
+        />
+      </div>
+      
       <div class="brand">
-        <h1>Emmvee x RCB — Employee Tickets</h1>
+        <h1>Grab your RCB Tickets - Emmvee</h1>
         <div class="pill">Interest-based • Not guaranteed</div>
       </div>
 
@@ -29,6 +77,26 @@
     </div>
 
     <script>
+      // Handle logo loading
+      const emmveeLogo = document.getElementById("emmveeLogo");
+      const rcbLogo = document.getElementById("rcbLogo");
+
+      function handleImageLoad(img) {
+        img.classList.remove("loading");
+        img.classList.add("loaded");
+      }
+
+      function handleImageError(img) {
+        img.classList.remove("loading");
+        img.classList.add("error");
+        console.warn("Failed to load logo:", img.alt);
+      }
+
+      emmveeLogo.addEventListener("load", () => handleImageLoad(emmveeLogo));
+      emmveeLogo.addEventListener("error", () => handleImageError(emmveeLogo));
+      rcbLogo.addEventListener("load", () => handleImageLoad(rcbLogo));
+      rcbLogo.addEventListener("error", () => handleImageError(rcbLogo));
+
       const employeeIdEl = document.getElementById("employeeId");
       const btn = document.getElementById("loginBtn");
       const msg = document.getElementById("msg");

@@ -5,63 +5,220 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ticket Interest Form | IPL Tickets</title>
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+      .logo-container img {
+        height: 45px;
+        width: auto;
+        object-fit: contain;
+        transition: opacity 0.3s ease;
+      }
+      .logo-container img.loading {
+        opacity: 0.3;
+      }
+      .logo-container img.loaded {
+        opacity: 1;
+      }
+      .logo-container img.error {
+        display: none;
+      }
+      
+      .compact-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .compact-header h1 {
+        font-size: 16px;
+        margin: 0;
+      }
+      .compact-header .pill {
+        font-size: 11px;
+      }
+      
+      .terms-section {
+        background: rgba(0,0,0,.15);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+      }
+      .terms-section .section-title {
+        margin-bottom: 6px;
+      }
+      .terms-section ul {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      
+      .form-grid {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      @media (min-width: 640px) {
+        .form-grid {
+          grid-template-columns: 220px 1fr;
+        }
+      }
+      
+      .ticket-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .inline-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        background: rgba(0,0,0,.1);
+        border-radius: 8px;
+      }
+      .inline-logo img {
+        height: 70px;
+        width: auto;
+        object-fit: contain;
+        transition: opacity 0.3s ease;
+      }
+      .inline-logo img.loading {
+        opacity: 0.3;
+      }
+      .inline-logo img.loaded {
+        opacity: 1;
+      }
+      .inline-logo img.error {
+        display: none;
+      }
+      
+      .section-title {
+        font-weight: 700;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      
+      .ticket-options label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+      
+      .matches {
+        display: grid;
+        gap: 8px;
+      }
+      .match {
+        padding: 8px;
+        border-radius: 8px;
+        font-size: 13px;
+      }
+      .match .title {
+        font-size: 13px;
+      }
+      .match .sub {
+        font-size: 11px;
+      }
+      
+      .submit-area {
+        position: sticky;
+        bottom: 0;
+        background: var(--card);
+        padding: 12px 0;
+        margin: 0 -18px;
+        padding-left: 18px;
+        padding-right: 18px;
+        border-top: 1px solid var(--border);
+      }
+    </style>
   </head>
   <body>
     <div class="container">
-      <div class="brand">
-        <h1>Ticket Interest Form</h1>
-        <div class="pill" id="whoami">Not logged in</div>
-      </div>
-
       <div class="card">
-        <div class="topbar">
+        <div class="compact-header">
           <div>
-            <div style="font-weight: 800; font-size: 15px;">Are you interested in IPL Matches?</div>
-            <div class="hint">Submit your interest. Tickets are limited and selection is random.</div>
+            <h1>IPL Ticket Interest Form</h1>
+            <div class="pill" id="whoami">Not logged in</div>
           </div>
           <button class="btn secondary" id="logoutBtn">Logout</button>
         </div>
 
-        <div>
-          <div style="font-weight: 700; margin-bottom: 6px;">Terms</div>
-          <ul class="terms">
-            <li>This is an interest-based application, not a guaranteed allotment.</li>
-            <li>Each person can receive tickets for only one match (if selected).</li>
-            <li>You may request 1 or 2 tickets only.</li>
-            <li>Random selection will be used due to limited availability.</li>
-            <li>Business-critical work must take priority.</li>
-            <li>Managers must ensure no critical operations are affected.</li>
+        <div class="terms-section">
+          <div class="section-title">Important Terms</div>
+          <ul>
+            <li>Interest-based application, not guaranteed</li>
+            <li>One match per person (if selected)</li>
+            <li>Request 1 or 2 tickets only</li>
+            <li>Random selection due to limited availability</li>
+            <li>Business-critical work takes priority</li>
           </ul>
         </div>
 
-        <div style="height: 14px;"></div>
-
-        <div class="row two">
-          <div>
-            <div style="font-weight: 700; margin-bottom: 6px;">Number of tickets</div>
-            <label style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-              <input type="radio" name="ticketCount" value="1" />
-              <span style="color: var(--text); font-size: 14px;">1 Ticket</span>
-            </label>
-            <label style="display:flex; gap:10px; align-items:center;">
-              <input type="radio" name="ticketCount" value="2" />
-              <span style="color: var(--text); font-size: 14px;">2 Tickets</span>
-            </label>
+        <div class="form-grid">
+          <div class="ticket-section">
+            <div>
+              <div class="section-title">Number of tickets</div>
+              <div class="ticket-options">
+                <label>
+                  <input type="radio" name="ticketCount" value="1" />
+                  <span>1 Ticket</span>
+                </label>
+                <label>
+                  <input type="radio" name="ticketCount" value="2" />
+                  <span>2 Tickets</span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="inline-logo">
+              <img 
+                id="rcbLogo" 
+                src="/logo/rcb_logo.jpg" 
+                alt="RCB Logo" 
+                class="loading"
+              />
+            </div>
           </div>
 
           <div>
-            <div style="font-weight: 700; margin-bottom: 6px;">Select match(es) (Bengaluru)</div>
+            <div class="section-title">Select match(es)</div>
             <div id="matches" class="matches"></div>
           </div>
         </div>
 
-        <div style="height: 14px;"></div>
-        <button class="btn" id="submitBtn">Submit Interest</button>
-        <div id="msg" class=""></div>
+        <div class="submit-area">
+          <button class="btn" id="submitBtn" style="width: 100%;">Submit Interest</button>
+          <div id="msg" class=""></div>
+        </div>
       </div>
     </div>
 
     <script>
+      // Handle logo loading
+      const rcbLogo = document.getElementById("rcbLogo");
+      if (rcbLogo) {
+        rcbLogo.addEventListener("load", () => {
+          rcbLogo.classList.remove("loading");
+          rcbLogo.classList.add("loaded");
+        });
+        rcbLogo.addEventListener("error", () => {
+          rcbLogo.classList.remove("loading");
+          rcbLogo.classList.add("error");
+        });
+      }
+
       const whoami = document.getElementById("whoami");
       const matchesEl = document.getElementById("matches");
       const submitBtn = document.getElementById("submitBtn");

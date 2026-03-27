@@ -5,9 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Winners | Admin</title>
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 20px;
+      }
+      .logo-container img {
+        height: 60px;
+        width: auto;
+        object-fit: contain;
+        transition: opacity 0.3s ease;
+      }
+      .logo-container img.loading {
+        opacity: 0.3;
+      }
+      .logo-container img.loaded {
+        opacity: 1;
+      }
+      .logo-container img.error {
+        display: none;
+      }
+      @media (max-width: 600px) {
+        .logo-container {
+          gap: 16px;
+        }
+        .logo-container img {
+          height: 50px;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="container">
+      <div class="logo-container">
+        <img 
+          id="emmveeLogo" 
+          src="/logo/Emmvee-group-logo.jpg" 
+          alt="Emmvee Logo" 
+          class="loading"
+        />
+        <img 
+          id="rcbLogo" 
+          src="/logo/rcb_logo.jpg" 
+          alt="RCB Logo" 
+          class="loading"
+        />
+      </div>
+      
       <div class="brand">
         <h1 id="title">Winners</h1>
         <div class="pill" id="pill">Loading…</div>
@@ -38,6 +85,23 @@
     </div>
 
     <script>
+      // Handle logo loading
+      const emmveeLogo = document.getElementById("emmveeLogo");
+      const rcbLogo = document.getElementById("rcbLogo");
+      
+      [emmveeLogo, rcbLogo].forEach(logo => {
+        if (logo) {
+          logo.addEventListener("load", () => {
+            logo.classList.remove("loading");
+            logo.classList.add("loaded");
+          });
+          logo.addEventListener("error", () => {
+            logo.classList.remove("loading");
+            logo.classList.add("error");
+          });
+        }
+      });
+
       const params = new URLSearchParams(window.location.search);
       const matchId = params.get("matchId");
       const titleEl = document.getElementById("title");
