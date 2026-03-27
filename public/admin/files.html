@@ -45,6 +45,87 @@
         font-size: 12px;
         color: var(--hint);
       }
+      .file-actions {
+        display: flex;
+        gap: 10px;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal.active {
+        display: flex;
+      }
+      .modal-content {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 800px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .modal-header h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--hint);
+        padding: 0;
+        width: 30px;
+        height: 30px;
+      }
+      .close-btn:hover {
+        color: var(--text);
+      }
+      textarea {
+        width: 100%;
+        min-height: 300px;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 13px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--text);
+        resize: vertical;
+      }
+      .upload-area {
+        border: 2px dashed var(--border);
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .upload-area:hover {
+        border-color: var(--primary);
+        background: rgba(255, 193, 7, 0.05);
+      }
+      .upload-area.dragover {
+        border-color: var(--primary);
+        background: rgba(255, 193, 7, 0.1);
+      }
     </style>
   </head>
   <body>
@@ -85,6 +166,36 @@
           
           <div id="msg" style="margin-top: 15px;"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modalTitle">Edit CSV File</h2>
+          <button class="close-btn" id="closeModal">&times;</button>
+        </div>
+        
+        <div class="upload-area" id="uploadArea">
+          <div style="font-size: 40px; margin-bottom: 10px;">📁</div>
+          <div style="font-weight: 600; margin-bottom: 5px;">Drop CSV file here or click to browse</div>
+          <div class="hint">Replace the file content by uploading a new CSV</div>
+          <input type="file" id="fileInput" accept=".csv" style="display: none;" />
+        </div>
+        
+        <div style="margin-bottom: 10px;">
+          <label style="font-weight: 600;">CSV Content:</label>
+          <div class="hint">Edit the CSV content directly below</div>
+        </div>
+        <textarea id="csvContent" placeholder="CSV content will appear here..."></textarea>
+        
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="btn" id="saveBtn">Save Changes</button>
+          <button class="btn secondary" id="cancelBtn">Cancel</button>
+        </div>
+        
+        <div id="modalMsg" style="margin-top: 15px;"></div>
       </div>
     </div>
 
@@ -165,14 +276,160 @@
                 <div class="file-name">${file.name}</div>
                 <div class="file-meta">${formatBytes(file.size)} • Modified: ${formatDate(file.modified)}</div>
               </div>
-              <a class="link" href="/api/admin/files/download/${encodeURIComponent(file.path)}" download>Download</a>
+              <div class="file-actions">
+                <a class="link" href="#" data-action="edit" data-path="${file.path}" data-name="${file.name}">Edit</a>
+                <a class="link" href="/api/admin/files/download/${encodeURIComponent(file.path)}" download>Download</a>
+              </div>
             `;
             filesListEl.appendChild(row);
           }
+          
+          // Add click handlers for edit buttons
+          document.querySelectorAll('[data-action="edit"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.preventDefault();
+              openEditModal(btn.dataset.path, btn.dataset.name);
+            });
+          });
         } catch (err) {
           setMsg("Network error. Please try again.", "error");
         }
       }
+
+      // Modal elements
+      const editModal = document.getElementById("editModal");
+      const modalTitle = document.getElementById("modalTitle");
+      const csvContent = document.getElementById("csvContent");
+      const closeModal = document.getElementById("closeModal");
+      const cancelBtn = document.getElementById("cancelBtn");
+      const saveBtn = document.getElementById("saveBtn");
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileInput");
+      const modalMsg = document.getElementById("modalMsg");
+      
+      let currentFilePath = "";
+      
+      function setModalMsg(text, type) {
+        modalMsg.className = type || "";
+        modalMsg.textContent = text || "";
+      }
+      
+      async function openEditModal(filePath, fileName) {
+        currentFilePath = filePath;
+        modalTitle.textContent = `Edit ${fileName}`;
+        setModalMsg("", "");
+        
+        // Load file content
+        try {
+          const res = await fetch(`/api/admin/files/download/${encodeURIComponent(filePath)}`);
+          if (res.ok) {
+            const content = await res.text();
+            csvContent.value = content;
+          } else {
+            csvContent.value = "";
+            setModalMsg("Could not load file content", "error");
+          }
+        } catch (err) {
+          csvContent.value = "";
+          setModalMsg("Error loading file", "error");
+        }
+        
+        editModal.classList.add("active");
+      }
+      
+      function closeEditModal() {
+        editModal.classList.remove("active");
+        currentFilePath = "";
+        csvContent.value = "";
+        setModalMsg("", "");
+      }
+      
+      async function saveFile() {
+        if (!currentFilePath) return;
+        
+        const content = csvContent.value;
+        if (!content.trim()) {
+          setModalMsg("CSV content cannot be empty", "error");
+          return;
+        }
+        
+        saveBtn.disabled = true;
+        setModalMsg("Saving...", "");
+        
+        try {
+          const res = await fetch(`/api/admin/files/upload/${encodeURIComponent(currentFilePath)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content }),
+          });
+          
+          const data = await res.json();
+          if (res.ok) {
+            setModalMsg("File saved successfully!", "success");
+            setTimeout(() => {
+              closeEditModal();
+              loadFiles();
+            }, 1000);
+          } else {
+            setModalMsg(data.error || "Failed to save file", "error");
+          }
+        } catch (err) {
+          setModalMsg("Network error. Please try again.", "error");
+        } finally {
+          saveBtn.disabled = false;
+        }
+      }
+      
+      // Upload area handlers
+      uploadArea.addEventListener("click", () => fileInput.click());
+      
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            csvContent.value = e.target.result;
+            setModalMsg("File loaded. Click 'Save Changes' to upload.", "success");
+          };
+          reader.readAsText(file);
+        }
+      });
+      
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+      });
+      
+      uploadArea.addEventListener("dragleave", () => {
+        uploadArea.classList.remove("dragover");
+      });
+      
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith(".csv")) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            csvContent.value = e.target.result;
+            setModalMsg("File loaded. Click 'Save Changes' to upload.", "success");
+          };
+          reader.readAsText(file);
+        } else {
+          setModalMsg("Please drop a CSV file", "error");
+        }
+      });
+      
+      // Modal event listeners
+      closeModal.addEventListener("click", closeEditModal);
+      cancelBtn.addEventListener("click", closeEditModal);
+      saveBtn.addEventListener("click", saveFile);
+      
+      // Close modal on outside click
+      editModal.addEventListener("click", (e) => {
+        if (e.target === editModal) closeEditModal();
+      });
 
       async function logout() {
         await fetch("/api/logout", { method: "POST" }).catch(() => {});

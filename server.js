@@ -425,6 +425,37 @@ app.get("/api/admin/files/download/:path(*)", requireAdmin, async (req, res) => 
   }
 });
 
+// Admin endpoint to upload/replace CSV file
+app.post("/api/admin/files/upload/:path(*)", requireAdmin, async (req, res) => {
+  try {
+    const filePath = String(req.params.path || "").trim();
+    const fullPath = path.join(DATA_DIR, filePath);
+    
+    // Security: ensure path is within DATA_DIR and is a CSV file
+    if (!fullPath.startsWith(DATA_DIR) || !filePath.endsWith(".csv")) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+    
+    // Get CSV content from request body
+    const csvContent = req.body.content;
+    if (!csvContent || typeof csvContent !== "string") {
+      return res.status(400).json({ error: "Invalid CSV content" });
+    }
+    
+    // Ensure directory exists
+    await ensureDir(path.dirname(fullPath));
+    
+    // Write the file
+    await require("fs").promises.writeFile(fullPath, csvContent, "utf8");
+    
+    console.log(`✅ CSV file uploaded: ${filePath}`);
+    res.json({ ok: true, message: "File uploaded successfully" });
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ error: "Failed to upload file" });
+  }
+});
+
 app.post("/api/logout", (req, res) => {
   const cookies = parseCookies(req.headers.cookie);
   if (cookies.emp_session) employeeSessions.delete(cookies.emp_session);
