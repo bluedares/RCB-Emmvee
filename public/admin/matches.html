@@ -71,7 +71,10 @@
       <div class="card">
         <div class="topbar">
           <a class="link" href="/admin/files.html">📁 Browse CSV Files</a>
-          <button class="btn secondary" id="logoutBtn">Logout</button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn secondary" id="refreshBtn">🔄 Refresh</button>
+            <button class="btn secondary" id="logoutBtn">Logout</button>
+          </div>
         </div>
 
         <div style="margin-top: 20px;">
@@ -121,6 +124,7 @@
 
       const rowsEl = document.getElementById("rows");
       const msg = document.getElementById("msg");
+      const refreshBtn = document.getElementById("refreshBtn");
       const logoutBtn = document.getElementById("logoutBtn");
 
       function setMsg(text, type) {
@@ -130,28 +134,40 @@
 
       async function load() {
         setMsg("", "");
-        const res = await fetch("/api/admin/matches");
-        if (res.status === 401) {
-          window.location.href = "/admin/login.html";
-          return;
-        }
-        const data = await res.json();
-        rowsEl.innerHTML = "";
-        for (const m of data.matches || []) {
-          const tr = document.createElement("tr");
-          const statusClass = m.winnersGenerated ? "status-yes" : "status-no";
-          const statusText = m.winnersGenerated ? "Yes" : "No";
-          tr.innerHTML = `
-            <td>
-              <div style="font-weight:800">${m.title}</div>
-              <div class="hint">${m.dateTime} • ${m.venue} • ${m.matchId}</div>
-            </td>
-            <td>${m.interestedCount}</td>
-            <td>${m.eligibleCount}</td>
-            <td><span class="${statusClass}">${statusText}</span></td>
-            <td><a class="link" href="/admin/match.html?matchId=${encodeURIComponent(m.matchId)}">Open</a></td>
-          `;
-          rowsEl.appendChild(tr);
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = "🔄 Loading...";
+        
+        try {
+          const res = await fetch("/api/admin/matches");
+          if (res.status === 401) {
+            window.location.href = "/admin/login.html";
+            return;
+          }
+          const data = await res.json();
+          rowsEl.innerHTML = "";
+          for (const m of data.matches || []) {
+            const tr = document.createElement("tr");
+            const statusClass = m.winnersGenerated ? "status-yes" : "status-no";
+            const statusText = m.winnersGenerated ? "Yes" : "No";
+            tr.innerHTML = `
+              <td>
+                <div style="font-weight:800">${m.title}</div>
+                <div class="hint">${m.dateTime} • ${m.venue} • ${m.matchId}</div>
+              </td>
+              <td>${m.interestedCount}</td>
+              <td>${m.eligibleCount}</td>
+              <td><span class="${statusClass}">${statusText}</span></td>
+              <td><a class="link" href="/admin/match.html?matchId=${encodeURIComponent(m.matchId)}">Open</a></td>
+            `;
+            rowsEl.appendChild(tr);
+          }
+          setMsg("Data refreshed successfully", "success");
+          setTimeout(() => setMsg("", ""), 2000);
+        } catch (err) {
+          setMsg("Failed to load data", "error");
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = "🔄 Refresh";
         }
       }
 
@@ -160,8 +176,9 @@
         window.location.href = "/admin/login.html";
       }
 
+      refreshBtn.addEventListener("click", load);
       logoutBtn.addEventListener("click", logout);
-      load().catch(() => setMsg("Failed to load matches.", "error"));
+      load();
     </script>
   </body>
 </html>
