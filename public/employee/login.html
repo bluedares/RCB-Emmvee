@@ -80,22 +80,25 @@
       // Handle logo loading
       const emmveeLogo = document.getElementById("emmveeLogo");
       const rcbLogo = document.getElementById("rcbLogo");
-
-      function handleImageLoad(img) {
-        img.classList.remove("loading");
-        img.classList.add("loaded");
-      }
-
-      function handleImageError(img) {
-        img.classList.remove("loading");
-        img.classList.add("error");
-        console.warn("Failed to load logo:", img.alt);
-      }
-
-      emmveeLogo.addEventListener("load", () => handleImageLoad(emmveeLogo));
-      emmveeLogo.addEventListener("error", () => handleImageError(emmveeLogo));
-      rcbLogo.addEventListener("load", () => handleImageLoad(rcbLogo));
-      rcbLogo.addEventListener("error", () => handleImageError(rcbLogo));
+      
+      [emmveeLogo, rcbLogo].forEach(logo => {
+        if (logo) {
+          // Check if image is already loaded (cached)
+          if (logo.complete && logo.naturalHeight !== 0) {
+            logo.classList.remove("loading");
+            logo.classList.add("loaded");
+          } else {
+            logo.addEventListener("load", () => {
+              logo.classList.remove("loading");
+              logo.classList.add("loaded");
+            });
+            logo.addEventListener("error", () => {
+              logo.classList.remove("loading");
+              logo.classList.add("error");
+            });
+          }
+        }
+      });
 
       const employeeIdEl = document.getElementById("employeeId");
       const btn = document.getElementById("loginBtn");

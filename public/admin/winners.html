@@ -91,14 +91,20 @@
       
       [emmveeLogo, rcbLogo].forEach(logo => {
         if (logo) {
-          logo.addEventListener("load", () => {
+          // Check if image is already loaded (cached)
+          if (logo.complete && logo.naturalHeight !== 0) {
             logo.classList.remove("loading");
             logo.classList.add("loaded");
-          });
-          logo.addEventListener("error", () => {
-            logo.classList.remove("loading");
-            logo.classList.add("error");
-          });
+          } else {
+            logo.addEventListener("load", () => {
+              logo.classList.remove("loading");
+              logo.classList.add("loaded");
+            });
+            logo.addEventListener("error", () => {
+              logo.classList.remove("loading");
+              logo.classList.add("error");
+            });
+          }
         }
       });
 

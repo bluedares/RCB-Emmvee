@@ -209,14 +209,20 @@
       // Handle logo loading
       const rcbLogo = document.getElementById("rcbLogo");
       if (rcbLogo) {
-        rcbLogo.addEventListener("load", () => {
+        // Check if image is already loaded (cached)
+        if (rcbLogo.complete && rcbLogo.naturalHeight !== 0) {
           rcbLogo.classList.remove("loading");
           rcbLogo.classList.add("loaded");
-        });
-        rcbLogo.addEventListener("error", () => {
-          rcbLogo.classList.remove("loading");
-          rcbLogo.classList.add("error");
-        });
+        } else {
+          rcbLogo.addEventListener("load", () => {
+            rcbLogo.classList.remove("loading");
+            rcbLogo.classList.add("loaded");
+          });
+          rcbLogo.addEventListener("error", () => {
+            rcbLogo.classList.remove("loading");
+            rcbLogo.classList.add("error");
+          });
+        }
       }
 
       const whoami = document.getElementById("whoami");
