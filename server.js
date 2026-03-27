@@ -80,9 +80,24 @@ async function ensureDataFiles() {
   if (!(await fileExists(EMPLOYEES_CSV))) {
     await rewriteCsv(EMPLOYEES_CSV, ["employeeId", "name", "email"], []);
   }
+  
+  // Seed admins.csv with default credentials if missing or empty
   if (!(await fileExists(ADMINS_CSV))) {
-    await rewriteCsv(ADMINS_CSV, ["username", "password"], []);
+    await rewriteCsv(ADMINS_CSV, ["username", "password"], [
+      { username: "suhas", password: "Admin@Emmvee" }
+    ]);
+    console.log("✅ Created admins.csv with default credentials");
+  } else {
+    // Check if file exists but is empty (only headers)
+    const admins = await readCsv(ADMINS_CSV);
+    if (admins.length === 0) {
+      await rewriteCsv(ADMINS_CSV, ["username", "password"], [
+        { username: "suhas", password: "Admin@Emmvee" }
+      ]);
+      console.log("✅ Seeded admins.csv with default credentials");
+    }
   }
+  
   if (!(await fileExists(INTERESTS_CSV))) {
     await rewriteCsv(INTERESTS_CSV, ["employeeId", "ticketCount", "matchId", "submittedAt"], []);
   }
