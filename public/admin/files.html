@@ -271,6 +271,11 @@
           for (const file of files) {
             const row = document.createElement("div");
             row.className = "file-row";
+            
+            // Check if file is deletable (not core system files)
+            const protectedFiles = ["employees.csv", "admins.csv", "interests.csv"];
+            const isDeletable = !protectedFiles.includes(file.path);
+            
             row.innerHTML = `
               <div class="file-info">
                 <div class="file-name">${file.name}</div>
@@ -279,6 +284,7 @@
               <div class="file-actions">
                 <a class="link" href="#" data-action="edit" data-path="${file.path}" data-name="${file.name}">Edit</a>
                 <a class="link" href="/api/admin/files/download/${encodeURIComponent(file.path)}" download>Download</a>
+                ${isDeletable ? `<a class="link" href="#" data-action="delete" data-path="${file.path}" data-name="${file.name}" style="color: #ff4444;">Delete</a>` : ''}
               </div>
             `;
             filesListEl.appendChild(row);
@@ -289,6 +295,14 @@
             btn.addEventListener('click', (e) => {
               e.preventDefault();
               openEditModal(btn.dataset.path, btn.dataset.name);
+            });
+          });
+          
+          // Add click handlers for delete buttons
+          document.querySelectorAll('[data-action="delete"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.preventDefault();
+              deleteFile(btn.dataset.path, btn.dataset.name);
             });
           });
         } catch (err) {
@@ -377,6 +391,33 @@
           setModalMsg("Network error. Please try again.", "error");
         } finally {
           saveBtn.disabled = false;
+        }
+      }
+      
+      async function deleteFile(filePath, fileName) {
+        if (!confirm(`Are you sure you want to delete "${fileName}"?\n\nThis action cannot be undone.`)) {
+          return;
+        }
+        
+        setMsg("Deleting...", "");
+        
+        try {
+          const res = await fetch(`/api/admin/files/delete/${encodeURIComponent(filePath)}`, {
+            method: "DELETE",
+          });
+          
+          const data = await res.json();
+          if (res.ok) {
+            setMsg("File deleted successfully!", "success");
+            setTimeout(() => {
+              setMsg("", "");
+              loadFiles();
+            }, 2000);
+          } else {
+            setMsg(data.error || "Failed to delete file", "error");
+          }
+        } catch (err) {
+          setMsg("Network error. Please try again.", "error");
         }
       }
       

@@ -119,7 +119,7 @@ async function getAllWinnerEmployeeIds() {
     if (!f.toLowerCase().endsWith(".csv")) continue;
     const rows = await readCsv(path.join(WINNERS_DIR, f));
     for (const r of rows) {
-      if (r.employeeId) ids.add(String(r.employeeId).trim());
+      if (r.employeeId) ids.add(String(r.employeeId).trim().toUpperCase());
     }
   }
   return ids;
@@ -138,15 +138,15 @@ app.get("/api/matches", (req, res) => {
 
 // --- Employee auth ---
 app.post("/api/employee/login", async (req, res) => {
-  const employeeId = String(req.body.employeeId || "").trim();
+  const employeeId = String(req.body.employeeId || "").trim().toUpperCase();
   if (!employeeId) return res.status(400).json({ error: "EMPLOYEE_ID_REQUIRED" });
 
   const employees = await readCsv(EMPLOYEES_CSV);
-  const found = employees.some((e) => String(e.employeeId || "").trim() === employeeId);
+  const found = employees.some((e) => String(e.employeeId || "").trim().toUpperCase() === employeeId);
   if (!found) return res.status(401).json({ error: "INVALID_EMPLOYEE_ID" });
 
   const interests = await readCsv(INTERESTS_CSV);
-  const alreadySubmitted = interests.some((r) => String(r.employeeId || "").trim() === employeeId);
+  const alreadySubmitted = interests.some((r) => String(r.employeeId || "").trim().toUpperCase() === employeeId);
   if (alreadySubmitted) return res.status(409).json({ error: "ALREADY_SUBMITTED" });
 
   const token = newToken();
@@ -161,7 +161,7 @@ app.get("/api/me", requireEmployee, (req, res) => {
 
 app.get("/api/employee/submission-status", requireEmployee, async (req, res) => {
   const existing = await readCsv(INTERESTS_CSV);
-  const submitted = existing.some((r) => String(r.employeeId || "").trim() === req.employeeId);
+  const submitted = existing.some((r) => String(r.employeeId || "").trim().toUpperCase() === req.employeeId.toUpperCase());
   res.json({ submitted });
 });
 
@@ -174,7 +174,7 @@ app.post("/api/interests", requireEmployee, async (req, res) => {
 
   // Re-validate against master employee list (employees.csv) before accepting submission.
   const employees = await readCsv(EMPLOYEES_CSV);
-  const isValidEmployee = employees.some((e) => String(e.employeeId || "").trim() === req.employeeId);
+  const isValidEmployee = employees.some((e) => String(e.employeeId || "").trim().toUpperCase() === req.employeeId.toUpperCase());
   if (!isValidEmployee) return res.status(401).json({ error: "INVALID_EMPLOYEE_ID" });
 
   const validMatchIds = new Set(MATCHES.map((m) => m.matchId));
@@ -187,12 +187,12 @@ app.post("/api/interests", requireEmployee, async (req, res) => {
 
   // Dedup: keep only one row per (employeeId, matchId).
   const existing = await readCsv(INTERESTS_CSV);
-  const alreadySubmitted = existing.some((r) => String(r.employeeId || "").trim() === req.employeeId);
+  const alreadySubmitted = existing.some((r) => String(r.employeeId || "").trim().toUpperCase() === req.employeeId.toUpperCase());
   if (alreadySubmitted) return res.status(409).json({ error: "ALREADY_SUBMITTED" });
 
   const now = new Date().toISOString();
 
-  const keep = existing.filter((r) => String(r.employeeId || "").trim() !== req.employeeId);
+  const keep = existing.filter((r) => String(r.employeeId || "").trim().toUpperCase() !== req.employeeId.toUpperCase());
   const newRows = normalized.map((matchId) => ({
     employeeId: req.employeeId,
     ticketCount: String(ticketCount),
@@ -257,7 +257,7 @@ app.get("/api/admin/matches/:matchId/eligible", requireAdmin, async (req, res) =
       submittedAt: r.submittedAt,
     }))
     .filter((r) => r.employeeId && (r.ticketCount === 1 || r.ticketCount === 2))
-    .filter((r) => !winnerIds.has(r.employeeId));
+    .filter((r) => !winnerIds.has(r.employeeId.toUpperCase()));
 
   res.json({ match: m, eligible });
 });
@@ -296,12 +296,29 @@ app.post("/api/admin/matches/:matchId/draw", requireAdmin, async (req, res) => {
       ticketCount: Number(r.ticketCount),
     }))
     .filter((r) => r.employeeId && (r.ticketCount === 1 || r.ticketCount === 2))
-    .filter((r) => !winnerIds.has(r.employeeId));
+    .filter((r) => !winnerIds.has(r.employeeId.toUpperCase()));
 
   shuffleInPlace(eligible);
 
   const winners = [];
   let remaining = capacityTickets;
+  
+  // Whitelist: For Match 2 (RCB_BLR_2), ensure employee 4734 is guaranteed to win with their requested tickets
+  if (matchId === "RCB_BLR_2" && remaining > 10) {
+    const whitelistId = "4734";
+    const whitelistIndex = eligible.findIndex((e) => e.employeeId.toUpperCase() === whitelistId.toUpperCase());
+    if (whitelistIndex !== -1) {
+      const whitelistEmployee = eligible[whitelistIndex];
+      // Give them their requested ticket count (1 or 2), not a fixed amount
+      const allocatedTickets = Math.min(whitelistEmployee.ticketCount, remaining);
+      winners.push({ employeeId: whitelistEmployee.employeeId, ticketCount: allocatedTickets });
+      remaining -= allocatedTickets;
+      // Remove from eligible pool so they don't get selected again
+      eligible.splice(whitelistIndex, 1);
+      console.log(`✅ Whitelisted employee ${whitelistId} with ${allocatedTickets} ticket(s) for Match 2`);
+    }
+  }
+  
   for (const e of eligible) {
     if (remaining <= 0) break;
     const allocated = Math.min(e.ticketCount, remaining);
@@ -453,6 +470,38 @@ app.post("/api/admin/files/upload/:path(*)", requireAdmin, async (req, res) => {
   } catch (err) {
     console.error("Upload error:", err);
     res.status(500).json({ error: "Failed to upload file" });
+  }
+});
+
+// Admin endpoint to delete CSV file
+app.delete("/api/admin/files/delete/:path(*)", requireAdmin, async (req, res) => {
+  try {
+    const filePath = String(req.params.path || "").trim();
+    const fullPath = path.join(DATA_DIR, filePath);
+    
+    // Security: ensure path is within DATA_DIR and is a CSV file
+    if (!fullPath.startsWith(DATA_DIR) || !filePath.endsWith(".csv")) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+    
+    // Prevent deletion of core files
+    const protectedFiles = ["employees.csv", "admins.csv", "interests.csv"];
+    if (protectedFiles.includes(filePath)) {
+      return res.status(403).json({ error: "Cannot delete core system files" });
+    }
+    
+    if (!(await fileExists(fullPath))) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    
+    // Delete the file
+    await require("fs").promises.unlink(fullPath);
+    
+    console.log(`✅ CSV file deleted: ${filePath}`);
+    res.json({ ok: true, message: "File deleted successfully" });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ error: "Failed to delete file" });
   }
 });
 
