@@ -359,10 +359,15 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 ensureDataFiles()
   .then(() => {
     app.listen(PORT, () => {
-      // eslint-disable-next-line no-console
       console.log(`Server running on http://localhost:${PORT}`);
       console.log(`Employee: http://localhost:${PORT}/employee/login.html`);
       console.log(`Admin:    http://localhost:${PORT}/admin/login.html`);
+      // Log Railway volume info if available
+      if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+        console.log(`✅ Railway Volume mounted at: ${process.env.RAILWAY_VOLUME_MOUNT_PATH}`);
+        console.log(`✅ Volume name: ${process.env.RAILWAY_VOLUME_NAME}`);
+      }
+      console.log(`📁 Data directory: ${DATA_DIR}`);
     });
   })
   .catch((err) => {
