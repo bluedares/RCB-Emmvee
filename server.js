@@ -345,6 +345,71 @@ app.get("/api/admin/matches/:matchId/winners/download", requireAdmin, async (req
   res.send(csvText);
 });
 
+// Admin endpoint to list all CSV files
+app.get("/api/admin/files", requireAdmin, async (req, res) => {
+  try {
+    const files = [];
+    
+    // List main data files
+    const mainFiles = ["employees.csv", "admins.csv", "interests.csv"];
+    for (const file of mainFiles) {
+      const filepath = path.join(DATA_DIR, file);
+      if (await fileExists(filepath)) {
+        const stats = await require("fs").promises.stat(filepath);
+        files.push({
+          name: file,
+          path: file,
+          size: stats.size,
+          modified: stats.mtime,
+        });
+      }
+    }
+    
+    // List winner files
+    const winnerFiles = await listFiles(WINNERS_DIR);
+    for (const file of winnerFiles) {
+      if (file.endsWith(".csv")) {
+        const filepath = path.join(WINNERS_DIR, file);
+        const stats = await require("fs").promises.stat(filepath);
+        files.push({
+          name: file,
+          path: `winners/${file}`,
+          size: stats.size,
+          modified: stats.mtime,
+        });
+      }
+    }
+    
+    res.json({ files });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to list files" });
+  }
+});
+
+// Admin endpoint to download any CSV file
+app.get("/api/admin/files/download/:path(*)", requireAdmin, async (req, res) => {
+  try {
+    const filePath = String(req.params.path || "").trim();
+    const fullPath = path.join(DATA_DIR, filePath);
+    
+    // Security: ensure path is within DATA_DIR
+    if (!fullPath.startsWith(DATA_DIR)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+    
+    if (!(await fileExists(fullPath))) {
+      return res.status(404).json({ error: "File not found" });
+    }
+    
+    const csvText = await require("./src/csv/csv").readFileText(fullPath);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${path.basename(filePath)}"`);
+    res.send(csvText);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to download file" });
+  }
+});
+
 app.post("/api/logout", (req, res) => {
   const cookies = parseCookies(req.headers.cookie);
   if (cookies.emp_session) employeeSessions.delete(cookies.emp_session);

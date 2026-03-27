@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSV Files — Admin</title>
+    <link rel="stylesheet" href="/admin/styles.css" />
+    <style>
+      .logo-container {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .logo-container img {
+        height: 60px;
+        width: auto;
+        transition: opacity 0.3s ease;
+      }
+      .logo-container img.loading {
+        opacity: 0.3;
+      }
+      .logo-container img.loaded {
+        opacity: 1;
+      }
+      .logo-container img.error {
+        opacity: 0.2;
+      }
+      .file-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .file-info {
+        flex: 1;
+      }
+      .file-name {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .file-meta {
+        font-size: 12px;
+        color: var(--hint);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo-container">
+        <img 
+          id="emmveeLogo" 
+          src="/logo/Emmvee-group-logo.jpg" 
+          alt="Emmvee Logo" 
+          class="loading"
+        />
+        <img 
+          id="rcbLogo" 
+          src="/logo/rcb_logo.jpg" 
+          alt="RCB Logo" 
+          class="loading"
+        />
+      </div>
+      
+      <div class="brand">
+        <h1>CSV Files Browser</h1>
+        <div class="pill">Admin Console</div>
+      </div>
+
+      <div class="card">
+        <div class="topbar">
+          <a class="link" href="/admin/matches.html">← Back to Matches</a>
+          <button class="btn secondary" id="logoutBtn">Logout</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <div style="font-weight: 800; font-size: 15px; margin-bottom: 10px;">All CSV Files</div>
+          <div class="hint" id="fileCount">Loading...</div>
+          
+          <div id="filesList" style="margin-top: 15px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+            <!-- Files will be loaded here -->
+          </div>
+          
+          <div id="msg" style="margin-top: 15px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Handle logo loading
+      const emmveeLogo = document.getElementById("emmveeLogo");
+      const rcbLogo = document.getElementById("rcbLogo");
+      
+      [emmveeLogo, rcbLogo].forEach(logo => {
+        if (logo) {
+          if (logo.complete && logo.naturalHeight !== 0) {
+            logo.classList.remove("loading");
+            logo.classList.add("loaded");
+          } else {
+            logo.addEventListener("load", () => {
+              logo.classList.remove("loading");
+              logo.classList.add("loaded");
+            });
+            logo.addEventListener("error", () => {
+              logo.classList.remove("loading");
+              logo.classList.add("error");
+            });
+          }
+        }
+      });
+
+      const filesListEl = document.getElementById("filesList");
+      const fileCountEl = document.getElementById("fileCount");
+      const msg = document.getElementById("msg");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      function setMsg(text, type) {
+        msg.className = type || "";
+        msg.textContent = text || "";
+      }
+
+      function formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+      }
+
+      function formatDate(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleString();
+      }
+
+      async function loadFiles() {
+        try {
+          const res = await fetch("/api/admin/files");
+          if (res.status === 401) {
+            window.location.href = "/admin/login.html";
+            return;
+          }
+          
+          const data = await res.json();
+          if (!res.ok) {
+            setMsg(data.error || "Failed to load files", "error");
+            return;
+          }
+
+          const files = data.files || [];
+          fileCountEl.textContent = `${files.length} file(s) found`;
+          
+          if (files.length === 0) {
+            filesListEl.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--hint);">No CSV files found</div>';
+            return;
+          }
+
+          filesListEl.innerHTML = "";
+          for (const file of files) {
+            const row = document.createElement("div");
+            row.className = "file-row";
+            row.innerHTML = `
+              <div class="file-info">
+                <div class="file-name">${file.name}</div>
+                <div class="file-meta">${formatBytes(file.size)} • Modified: ${formatDate(file.modified)}</div>
+              </div>
+              <a class="link" href="/api/admin/files/download/${encodeURIComponent(file.path)}" download>Download</a>
+            `;
+            filesListEl.appendChild(row);
+          }
+        } catch (err) {
+          setMsg("Network error. Please try again.", "error");
+        }
+      }
+
+      async function logout() {
+        await fetch("/api/logout", { method: "POST" }).catch(() => {});
+        window.location.href = "/admin/login.html";
+      }
+
+      logoutBtn.addEventListener("click", logout);
+      loadFiles();
+    </script>
+  </body>
+</html>
