@@ -132,8 +132,20 @@ app.use("/admin", express.static(path.join(__dirname, "public", "admin")));
 app.get("/", (req, res) => res.redirect("/employee/login.html"));
 
 // --- Public API ---
-app.get("/api/matches", (req, res) => {
-  res.json({ matches: MATCHES });
+app.get("/api/matches", async (req, res) => {
+  const matchesWithStatus = await Promise.all(
+    MATCHES.map(async (m) => {
+      const winnersPath = winnersPathForMatch(m.matchId);
+      const winnersExist = await fileExists(winnersPath);
+      let winnersGenerated = false;
+      if (winnersExist) {
+        const winners = await readCsv(winnersPath);
+        winnersGenerated = winners.length > 0;
+      }
+      return { ...m, winnersGenerated };
+    })
+  );
+  res.json({ matches: matchesWithStatus });
 });
 
 // --- Employee auth ---
@@ -302,22 +314,6 @@ app.post("/api/admin/matches/:matchId/draw", requireAdmin, async (req, res) => {
 
   const winners = [];
   let remaining = capacityTickets;
-  
-  // Whitelist: For Match 2 (RCB_BLR_2), ensure employee 4734 is guaranteed to win with their requested tickets
-  if (matchId === "RCB_BLR_2" && remaining > 10) {
-    const whitelistId = "4734";
-    const whitelistIndex = eligible.findIndex((e) => e.employeeId.toUpperCase() === whitelistId.toUpperCase());
-    if (whitelistIndex !== -1) {
-      const whitelistEmployee = eligible[whitelistIndex];
-      // Give them their requested ticket count (1 or 2), not a fixed amount
-      const allocatedTickets = Math.min(whitelistEmployee.ticketCount, remaining);
-      winners.push({ employeeId: whitelistEmployee.employeeId, ticketCount: allocatedTickets });
-      remaining -= allocatedTickets;
-      // Remove from eligible pool so they don't get selected again
-      eligible.splice(whitelistIndex, 1);
-      console.log(`✅ Whitelisted employee ${whitelistId} with ${allocatedTickets} ticket(s) for Match 2`);
-    }
-  }
   
   for (const e of eligible) {
     if (remaining <= 0) break;

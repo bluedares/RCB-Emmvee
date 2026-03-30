@@ -17,21 +17,27 @@ const MATCHES = [
   },
   {
     matchId: "RCB_BLR_3",
-    title: "RCB Match 3 (Bengaluru)",
-    dateTime: "TBD",
+    title: "RCB vs LSG (Bengaluru)",
+    dateTime: "Tue, 15 Apr - 7:30pm",
     venue: "Bengaluru",
+    opponent: "LSG",
+    matchNumber: "T20 23 of 70",
   },
   {
     matchId: "RCB_BLR_4",
-    title: "RCB Match 4 (Bengaluru)",
-    dateTime: "TBD",
+    title: "RCB vs DC (Bengaluru)",
+    dateTime: "Fri, 18 Apr - 3:30pm",
     venue: "Bengaluru",
+    opponent: "DC",
+    matchNumber: "T20 26 of 70",
   },
   {
     matchId: "RCB_BLR_5",
-    title: "RCB Match 5 (Bengaluru)",
-    dateTime: "TBD",
+    title: "RCB vs GT (Bengaluru)",
+    dateTime: "Thu, 24 Apr - 7:30pm",
     venue: "Bengaluru",
+    opponent: "GT",
+    matchNumber: "T20 32 of 70",
   },
 ];
 

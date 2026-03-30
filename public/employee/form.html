@@ -131,6 +131,24 @@
       .match .sub {
         font-size: 11px;
       }
+      .match.disabled {
+        opacity: 0.5;
+        background: var(--border);
+        cursor: not-allowed;
+      }
+      .match.disabled input {
+        cursor: not-allowed;
+      }
+      .match .status-badge {
+        display: inline-block;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #ff4444;
+        color: white;
+        font-weight: 600;
+        margin-left: 6px;
+      }
       
       .submit-area {
         position: sticky;
@@ -270,11 +288,14 @@
         matchesEl.innerHTML = "";
         for (const m of data.matches || []) {
           const wrap = document.createElement("label");
-          wrap.className = "match";
+          wrap.className = m.winnersGenerated ? "match disabled" : "match";
+          
+          const statusBadge = m.winnersGenerated ? '<span class="status-badge">CLOSED</span>' : '';
+          
           wrap.innerHTML = `
-            <input type="checkbox" name="match" value="${m.matchId}" />
+            <input type="checkbox" name="match" value="${m.matchId}" ${m.winnersGenerated ? 'disabled' : ''} />
             <div class="meta">
-              <div class="title">${m.title}</div>
+              <div class="title">${m.title}${statusBadge}</div>
               <div class="sub">${m.dateTime} • ${m.venue}</div>
               <div class="sub">Match ID: ${m.matchId}</div>
             </div>
